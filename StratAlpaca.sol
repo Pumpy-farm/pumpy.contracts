@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 
+pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
-pragma solidity ^0.6.12;
 
-// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol";
+// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/IERC20.sol";
 abstract contract Context {
     function _msgSender() internal view virtual returns (address payable) {
         return msg.sender;
@@ -422,7 +422,8 @@ contract ERC20 is Context, IERC20 {
         public
         virtual
         returns (bool)
-    {        _approve(
+    {
+        _approve(
             _msgSender(),
             spender,
             _allowances[_msgSender()][spender].add(addedValue)
@@ -1305,7 +1306,7 @@ abstract contract Ownable is Context {
      * @dev Throws if called by any account other than the owner.
      */
     modifier onlyOwner() {
-        require(_owner == _msgSender(), "Ownable: caller is not the owner");
+        require(_owner == _msgSender(), "Ownable: caller is not the owner1");
         _;
     }
 
@@ -1333,6 +1334,269 @@ abstract contract Ownable is Context {
         emit OwnershipTransferred(_owner, newOwner);
         _owner = newOwner;
     }
+}
+
+interface IAlpacaFarm {
+    
+    struct PoolInfo {
+        address stakeToken; // Address of Staking token contract.
+        uint256 allocPoint; // How many allocation points assigned to this pool. ALPACAs to distribute per block.
+        uint256 lastRewardBlock; // Last block number that ALPACAs distribution occurs.
+        uint256 accAlpacaPerShare; // Accumulated ALPACAs per share, times 1e12. See below.
+        uint256 accAlpacaPerShareTilBonusEnd; // Accumated ALPACAs per share until Bonus End.
+      }
+    
+    function poolInfo(uint256 _pid) external view returns (PoolInfo memory);
+    
+    function poolLength() external view returns (uint256);
+
+    function userInfo(uint256 _pid, address _address) external view returns (uint256, uint256, uint256, address);
+    
+    function bonusLockUpBps() external view returns (uint256);
+
+    // Return reward multiplier over the given _from to _to block.
+    function getMultiplier(uint256 _from, uint256 _to)
+        external
+        view
+        returns (uint256);
+
+    // View function to see pending ALPACAs on frontend.
+    function pendingAlpaca(uint256 _pid, address _user)
+        external
+        view
+        returns (uint256);
+
+    // Deposit LP tokens to MasterChef for ALPACA allocation.
+    function deposit(address _for, uint256 _pid, uint256 _amount) external;
+
+    // Withdraw LP tokens from MasterChef.
+    function withdraw(address _for, uint256 _pid, uint256 _amount) external;
+    
+    // Withdraw LP tokens from MasterChef.
+    function harvest(uint256 _pid) external;
+
+    // Stake ALPACA tokens to MasterChef
+    function enterStaking(uint256 _amount) external;
+
+    // Withdraw ALPACA tokens from STAKING.
+    function leaveStaking(uint256 _amount) external;
+
+    // Withdraw without caring about rewards. EMERGENCY ONLY.
+    function emergencyWithdraw(uint256 _pid) external;
+}
+
+interface IAlpacaToken {
+    function lockOf(address _address) external view returns (uint256);
+    
+    function unlock() external;
+    
+    function canUnlockAmount(address _account) external view returns(uint256);
+}
+
+interface IPancakeRouter01 {
+    function factory() external pure returns (address);
+
+    function WETH() external pure returns (address);
+
+    function addLiquidity(
+        address tokenA,
+        address tokenB,
+        uint256 amountADesired,
+        uint256 amountBDesired,
+        uint256 amountAMin,
+        uint256 amountBMin,
+        address to,
+        uint256 deadline
+    )
+        external
+        returns (
+            uint256 amountA,
+            uint256 amountB,
+            uint256 liquidity
+        );
+
+    function addLiquidityETH(
+        address token,
+        uint256 amountTokenDesired,
+        uint256 amountTokenMin,
+        uint256 amountETHMin,
+        address to,
+        uint256 deadline
+    )
+        external
+        payable
+        returns (
+            uint256 amountToken,
+            uint256 amountETH,
+            uint256 liquidity
+        );
+
+    function removeLiquidity(
+        address tokenA,
+        address tokenB,
+        uint256 liquidity,
+        uint256 amountAMin,
+        uint256 amountBMin,
+        address to,
+        uint256 deadline
+    ) external returns (uint256 amountA, uint256 amountB);
+
+    function removeLiquidityETH(
+        address token,
+        uint256 liquidity,
+        uint256 amountTokenMin,
+        uint256 amountETHMin,
+        address to,
+        uint256 deadline
+    ) external returns (uint256 amountToken, uint256 amountETH);
+
+    function removeLiquidityWithPermit(
+        address tokenA,
+        address tokenB,
+        uint256 liquidity,
+        uint256 amountAMin,
+        uint256 amountBMin,
+        address to,
+        uint256 deadline,
+        bool approveMax,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external returns (uint256 amountA, uint256 amountB);
+
+    function removeLiquidityETHWithPermit(
+        address token,
+        uint256 liquidity,
+        uint256 amountTokenMin,
+        uint256 amountETHMin,
+        address to,
+        uint256 deadline,
+        bool approveMax,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external returns (uint256 amountToken, uint256 amountETH);
+
+    function swapExactTokensForTokens(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external returns (uint256[] memory amounts);
+
+    function swapTokensForExactTokens(
+        uint256 amountOut,
+        uint256 amountInMax,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external returns (uint256[] memory amounts);
+
+    function swapExactETHForTokens(
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external payable returns (uint256[] memory amounts);
+
+    function swapTokensForExactETH(
+        uint256 amountOut,
+        uint256 amountInMax,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external returns (uint256[] memory amounts);
+
+    function swapExactTokensForETH(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external returns (uint256[] memory amounts);
+
+    function swapETHForExactTokens(
+        uint256 amountOut,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external payable returns (uint256[] memory amounts);
+
+    function quote(
+        uint256 amountA,
+        uint256 reserveA,
+        uint256 reserveB
+    ) external pure returns (uint256 amountB);
+
+    function getAmountOut(
+        uint256 amountIn,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) external pure returns (uint256 amountOut);
+
+    function getAmountIn(
+        uint256 amountOut,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) external pure returns (uint256 amountIn);
+
+    function getAmountsOut(uint256 amountIn, address[] calldata path)
+        external
+        view
+        returns (uint256[] memory amounts);
+
+    function getAmountsIn(uint256 amountOut, address[] calldata path)
+        external
+        view
+        returns (uint256[] memory amounts);
+}
+
+interface IPancakeRouter02 is IPancakeRouter01 {
+    function removeLiquidityETHSupportingFeeOnTransferTokens(
+        address token,
+        uint256 liquidity,
+        uint256 amountTokenMin,
+        uint256 amountETHMin,
+        address to,
+        uint256 deadline
+    ) external returns (uint256 amountETH);
+
+    function removeLiquidityETHWithPermitSupportingFeeOnTransferTokens(
+        address token,
+        uint256 liquidity,
+        uint256 amountTokenMin,
+        uint256 amountETHMin,
+        address to,
+        uint256 deadline,
+        bool approveMax,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external returns (uint256 amountETH);
+
+    function swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external;
+
+    function swapExactETHForTokensSupportingFeeOnTransferTokens(
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external payable;
+
+    function swapExactTokensForETHSupportingFeeOnTransferTokens(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external;
 }
 
 // "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/ReentrancyGuard.sol";
@@ -1379,352 +1643,205 @@ abstract contract ReentrancyGuard {
     }
 }
 
-contract Referral is Ownable {
-  using SafeMath for uint;
-  using SafeERC20 for IERC20;
+// "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Pausable.sol";
+contract Pausable is Context {
+    /**
+     * @dev Emitted when the pause is triggered by `account`.
+     */
+    event Paused(address account);
 
-  /**
-   * @dev Max referral level depth
-   */
-  uint8 constant MAX_REFER_DEPTH = 3;
+    /**
+     * @dev Emitted when the pause is lifted by `account`.
+     */
+    event Unpaused(address account);
 
-  /**
-   * @dev Max referee amount to bonus rate depth
-   */
-  uint8 constant MAX_REFEREE_BONUS_LEVEL = 3;
+    bool private _paused;
 
-
-  /**
-   * @dev The struct of account information
-   * @param referrer The referrer addresss
-   * @param reward The total referral reward of an address
-   * @param referredCount The total referral amount of an address
-   * @param lastActiveTimestamp The last active timestamp of an address
-   */
-  struct Account {
-    address referrer;
-    uint reward;
-    uint referredCount;
-    uint lastActiveTimestamp;
-  }
-
-  /**
-   * @dev The struct of referee amount to bonus rate
-   * @param lowerBound The minial referee amount
-   * @param rate The bonus rate for each referee amount
-   */
-  struct RefereeBonusRate {
-    uint lowerBound;
-    uint rate;
-  }
-
-  event RegisteredReferer(address referee, address referrer);
-  event RegisteredRefererFailed(address referee, address referrer, string reason);
-  event PaidReferral(address from, address to, uint amount, uint level);
-  event UpdatedUserLastActiveTime(address user, uint timestamp);
-
-  mapping(address => Account) public accounts;
-  
-  /**
-   * _decimals The base decimals for float calc, for example 1000
-   * _referralBonus The total referral bonus rate, which will divide by decimals. For example, If you will like to set as 5%, it can set as 50 when decimals is 1000.
-   * _secondsUntilInactive The seconds that a user does not update will be seen as inactive.
-   * _onlyRewardActiveReferrers The flag to enable not paying to inactive uplines.
-   * _levelRate The bonus rate for each level, which will divide by decimals too. The max depth is MAX_REFER_DEPTH.
-   */
-  uint256[] levelRate;
-  uint256 constant referralBonus = 1000;
-  uint256 constant decimals = 10000;
-  uint256 constant secondsUntilInactive = 0;
-  bool constant onlyRewardActiveReferrers = false;
-  RefereeBonusRate[] refereeBonusRateMap;
-  
-  constructor(
-  )
-    public
-  {
-    levelRate = [5000, 3000, 2000];
-  }
-
-  function sum(uint[] memory data) public pure returns (uint) {
-    uint S;
-    for(uint i;i < data.length;i++) {
-      S += data[i];
-    }
-    return S;
-  }
-
-
-  /**
-   * @dev Utils function for check whether an address has the referrer
-   */
-  function hasReferrer(address addr) public view returns(bool){
-    return accounts[addr].referrer != address(0);
-  }
-
-  /**
-   * @dev Get block timestamp with function for testing mock
-   */
-  function getTime() public view returns(uint256) {
-    return now; // solium-disable-line security/no-block-members
-  }
-
-  function isCircularReference(address referrer, address referee) internal view returns(bool){
-    address parent = referrer;
-
-    for (uint i; i < levelRate.length; i++) {
-      if (parent == address(0)) {
-        break;
-      }
-
-      if (parent == referee) {
-        return true;
-      }
-
-      parent = accounts[parent].referrer;
+    /**
+     * @dev Initializes the contract in unpaused state.
+     */
+    constructor() internal {
+        _paused = false;
     }
 
-    return false;
-  }
-
-  /**
-   * @dev Add an address as referrer
-   * @param referrer The address would set as referrer of msg.sender
-   * @return whether success to add upline
-   */
-  function addReferrer(address referrer) internal returns(bool){
-    if (referrer == address(0)) {
-      emit RegisteredRefererFailed(msg.sender, referrer, "Referrer cannot be 0x0 address");
-      return false;
-    } else if (isCircularReference(referrer, msg.sender)) {
-      emit RegisteredRefererFailed(msg.sender, referrer, "Referee cannot be one of referrer uplines");
-      return false;
-    } else if (accounts[msg.sender].referrer != address(0)) {
-      emit RegisteredRefererFailed(msg.sender, referrer, "Address have been registered upline");
-      return false;
+    /**
+     * @dev Returns true if the contract is paused, and false otherwise.
+     */
+    function paused() public view returns (bool) {
+        return _paused;
     }
 
-    Account storage userAccount = accounts[msg.sender];
-    Account storage parentAccount = accounts[referrer];
-
-    userAccount.referrer = referrer;
-    userAccount.lastActiveTimestamp = getTime();
-    parentAccount.referredCount = parentAccount.referredCount.add(1);
-
-    emit RegisteredReferer(msg.sender, referrer);
-    return true;
-  }
-
-  /**
-   * @dev Developers should define what kind of actions are seens active. By default, payReferral will active msg.sender.
-   * @param user The address would like to update active time
-   */
-  function updateActiveTimestamp(address user) internal {
-    uint timestamp = getTime();
-    accounts[user].lastActiveTimestamp = timestamp;
-    emit UpdatedUserLastActiveTime(user, timestamp);
-  }
-}
-
-interface IPumpyFarm {
-    struct PoolInfo {
-        IERC20 want; // Address of the want token.
-        uint256 allocPoint; // How many allocation points assigned to this pool. PMP to distribute per block.
-        uint256 lastRewardBlock; // Last block number that PMP distribution occurs.
-        uint256 accPMPPerShare; // Accumulated PMP per share, times 1e12. See below.
-        address strat; // Strategy address that will auto compound want tokens
+    /**
+     * @dev Modifier to make a function callable only when the contract is not paused.
+     *
+     * Requirements:
+     *
+     * - The contract must not be paused.
+     */
+    modifier whenNotPaused() {
+        require(!_paused, "Pausable: paused");
+        _;
     }
-    
-    function poolInfo(uint256 _pid) external view returns (PoolInfo memory);
-    
-    function deposit(uint256 _pid, uint256 _wantAmt) external;
-    
-    function withdraw(uint256 _pid, uint256 _wantAmt) external;
-    
-    function updatePool(uint256 _pid) external;
-    
-    function totalAllocPoint() external view returns(uint256);
+
+    /**
+     * @dev Modifier to make a function callable only when the contract is paused.
+     *
+     * Requirements:
+     *
+     * - The contract must be paused.
+     */
+    modifier whenPaused() {
+        require(_paused, "Pausable: not paused");
+        _;
+    }
+
+    /**
+     * @dev Triggers stopped state.
+     *
+     * Requirements:
+     *
+     * - The contract must not be paused.
+     */
+    function _pause() internal virtual whenNotPaused {
+        _paused = true;
+        emit Paused(_msgSender());
+    }
+
+    /**
+     * @dev Returns to normal state.
+     *
+     * Requirements:
+     *
+     * - The contract must be paused.
+     */
+    function _unpause() internal virtual whenPaused {
+        _paused = false;
+        emit Unpaused(_msgSender());
+    }
 }
 
-interface IStrategy {
-    // Total want tokens managed by stratfegy
-    function wantLockedTotal() external view returns (uint256);
+contract StratHomora is Ownable, ReentrancyGuard, Pausable {
+    // Maximises yields in pancakeswap
 
-    // Sum of all shares of users to wantLockedTotal
-    function sharesTotal() external view returns (uint256);
-    function entranceFeeFactor() external view returns (uint256);
-    function entranceFeeFactorMax() external view returns (uint256);
-
-    // Main want token compounding function
-    function earn() external;
-
-    // Transfer want tokens PumpyFarm -> strategy
-    function deposit(address _userAddress, uint256 _wantAmt)
-        external
-        returns (uint256);
-
-    // Transfer want tokens strategy -> PumpyFarm
-    function withdraw(address _userAddress, uint256 _wantAmt)
-        external
-        returns (uint256);
-
-    function inCaseTokensGetStuck(
-        address _token,
-        uint256 _amount,
-        address _to
-    ) external;
-}
-
-interface IReferralStrat {
-    function getSharesAdded(address _strat, uint256 _wantAmt, uint256 _wantLockedTotal) external view returns (uint256);
-    function getSharesRemoved(address _strat, uint256 _wantAmt, uint256 _wantLockedTotal) external view returns (uint256);
-}
-
-contract PumpyReferral is Ownable, Referral {
-    using SafeERC20 for IERC20;
     using SafeMath for uint256;
+    using SafeERC20 for IERC20;
+
+    bool public isCAKEStaking; // only for staking CAKE using pancakeswap's native CAKE staking contract.
+    bool public isAutoComp; // this vault is purely for staking. eg. WBNB-PMP staking vault.
+
+    address public farmContractAddress; // address of farm, eg, PCS, Thugs etc.
+    uint256 public pid; // pid of pool in farmContractAddress
+    address public wantAddress;
+    address public token0Address;
+    address public token1Address;
+    address public earnedAddress;
+    address public uniRouterAddress; // uniswap, pancakeswap etc
+
+    address public constant wbnbAddress =
+        0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+    address public pumpyFarmAddress;
+    address public PMPAddress;
+    address public govAddress; // timelock contract
+    bool public onlyGov = true;
+
+    uint256 public lastEarnBlock = 0;
+    uint256 public wantLockedTotal = 0;
+    uint256 public sharesTotal = 0;
+
+    uint256 public controllerFee = 20;
+    uint256 public constant controllerFeeMax = 10000; // 100 = 1%
+    uint256 public constant controllerFeeUL = 300;
+
+    uint256 public buyBackRate = 150;
+    uint256 public constant buyBackRateMax = 10000; // 100 = 1%
+    uint256 public constant buyBackRateUL = 800;
+    address public constant buyBackAddress =
+        0x000000000000000000000000000000000000dEaD;
+
+    uint256 public entranceFeeFactor = 9990; // < 0.1% entrance fee - goes to pool + prevents front-running
+    uint256 public constant entranceFeeFactorMax = 10000;
+    uint256 public constant entranceFeeFactorLL = 9950; // 0.5% is the max entrance fee settable. LL = lowerlimit
+
+    address[] public earnedToPMPPath;
+    address[] public earnedToToken0Path;
+    address[] public earnedToToken1Path;
+    address[] public token0ToEarnedPath;
+    address[] public token1ToEarnedPath;
     
-    address constant public pumpyFarmAddress = 0xD7ACd2a9FD159E69Bb102A1ca21C9a3e3A5F771B;
-    address constant public PMPTokenAddress = 0xd9145CCE52D386f254917e481eB44e9943F39138;
-    uint256 constant public PMPMaxSupply = 100000e18;
-    uint256 constant public PMPPerBlock = 8500000000000000;
+    uint256 public constant bonusEndBlock = 5661200;
+    bool public isWithdrawLockTokensAllowed = false;
+    uint256 public endAmountLockTokens;
     
-    address public leaderPoolsAddress;
-    uint256 public poolStakingPid; // In PumpyFarm poolInfo
-    address public poolStakingAddress;
-    address public treasure; // Deafult treasure timelock contract
-  
     struct UserInfo {
-        uint256 shares;
-        uint256 rewardDebt;
+        uint256 amount;
+        uint256 lastBlockReward;
+        uint256 accSharesLockTokens;
     }
     
-    mapping(uint256 => mapping(address => UserInfo)) public userInfo;
-    mapping(uint256 => address) public strategies;
-    uint256[] public pmpThreshold;
+    mapping(address => UserInfo) public userInfo;
     
-    constructor() Referral()
-    public
-    // solium-disable-next-line no-empty-blocks
-    {
-        // Should hold PMP for 1 level = 1 pmp, 2 level = 5 pmp, 3 level = 10 pmp
-        pmpThreshold=[1e18, 5e18, 10e18];
-    }
-    
-    function setStrategy(uint256 _pid, address _strategy) public onlyOwner {
-        strategies[_pid] = _strategy;
-    }
-    
-    function setUser(address _user, address _referrer) public onlyOwner {
-        Account storage user = accounts[_user];
-        user.referrer = _referrer;
-    }
-    
-    function setThreshold(uint256[] memory _threshold) public onlyOwner {
-        pmpThreshold = _threshold;
-    }
-    
-    function setPoolStaking(uint256 _pid, address _poolStakingAddress) public onlyOwner {
-        poolStakingPid = _pid;
-        poolStakingAddress = _poolStakingAddress;
-    }
-    
-    function setLeaderPoolsAddress(address _leaderPoolsAddress) public onlyOwner {
-        leaderPoolsAddress = _leaderPoolsAddress;
-    }
-    
-    function setTreasure(address _treasure) public onlyOwner {
-        treasure = _treasure;
-    }
-    
-    function withdrawPMP(uint256 _pid) public {
-        IPumpyFarm(pumpyFarmAddress).withdraw(_pid, 0);
-    }
-  
-    function deposit(address _referrer, uint256 _pid, uint256 _wantAmt) public {
-        IPumpyFarm(pumpyFarmAddress).updatePool(_pid);
-          
-        UserInfo storage user = userInfo[_pid][msg.sender];
-        IPumpyFarm.PoolInfo memory pool = IPumpyFarm(pumpyFarmAddress).poolInfo(_pid);
-    
-        if (user.shares > 0) {
-            uint256 pending =
-                user.shares.mul(pool.accPMPPerShare).div(1e12).sub(
-                    user.rewardDebt
-                );
-            if (pending > 0) {
-                uint paidReferral = payReferral(pending, PMPTokenAddress);
-                safePMPTransfer(msg.sender, pending.sub(paidReferral));
-            }
-        }
-    
-        if (_wantAmt > 0) {
-            pool.want.safeTransferFrom(
-                address(msg.sender),
-                address(this),
-                _wantAmt
-            );
-            pool.want.safeIncreaseAllowance(pumpyFarmAddress, _wantAmt);
-            uint256 wantLockedTotal = IStrategy(pool.strat).wantLockedTotal();
-            uint256 sharesAdded = IReferralStrat(strategies[_pid]).getSharesAdded(pool.strat, _wantAmt, wantLockedTotal);
-            IPumpyFarm(pumpyFarmAddress).deposit(_pid, _wantAmt);
-            user.shares = user.shares.add(sharesAdded);
-        }
-        user.rewardDebt = user.shares.mul(pool.accPMPPerShare).div(1e12);
-    
-        if (!hasReferrer(msg.sender)) {
-            // Treasure address as referrer by deafult
-            if (_referrer != address(0)) {
-                addReferrer(_referrer);
-            } else {
-                addReferrer(treasure);
-            }
-        }
-    }
-  
-    function withdraw(uint256 _pid, uint256 _wantAmt) public {
-        IPumpyFarm(pumpyFarmAddress).updatePool(_pid);
-      
-        UserInfo storage user = userInfo[_pid][msg.sender];
-        IPumpyFarm.PoolInfo memory pool = IPumpyFarm(pumpyFarmAddress).poolInfo(_pid);
-        
-        uint256 sharesTotal = IStrategy(pool.strat).sharesTotal();
+    uint256 totalSharesLockToken = 0;
 
-        require(user.shares > 0, "user.shares is 0");
-        require(sharesTotal > 0, "sharesTotal is 0");
-        
-        uint256 wantLockedTotal =
-            IStrategy(pool.strat).wantLockedTotal();
-        
-        uint256 amount = user.shares.mul(wantLockedTotal).div(sharesTotal);
-        if (_wantAmt > amount) {
-            _wantAmt = amount;
-        }
-        if (_wantAmt > 0) {
-            IPumpyFarm(pumpyFarmAddress).withdraw(_pid, _wantAmt);
-            uint256 sharesRemoved = IReferralStrat(strategies[_pid]).getSharesRemoved(pool.strat, _wantAmt, wantLockedTotal);
+    constructor(
+        address _pumpyFarmAddress,
+        address _PMPAddress,
+        bool _isCAKEStaking,
+        bool _isAutoComp,
+        address _farmContractAddress,
+        uint256 _pid,
+        address _wantAddress,
+        address _token0Address,
+        address _token1Address,
+        address _earnedAddress,
+        address _uniRouterAddress
+    ) public {
+        govAddress = msg.sender;
+        pumpyFarmAddress = _pumpyFarmAddress;
+        PMPAddress = _PMPAddress;
 
-            if (sharesRemoved > user.shares) {
-                user.shares = 0;
-            } else {
-                user.shares = user.shares.sub(sharesRemoved);
+        isCAKEStaking = _isCAKEStaking;
+        isAutoComp = _isAutoComp;
+        wantAddress = _wantAddress;
+
+        if (isAutoComp) {
+            if (!isCAKEStaking) {
+                token0Address = _token0Address;
+                token1Address = _token1Address;
             }
 
-            uint256 wantBal = IERC20(pool.want).balanceOf(address(this));
-            if (wantBal < _wantAmt) {
-                _wantAmt = wantBal;
+            farmContractAddress = _farmContractAddress;
+            pid = _pid;
+            earnedAddress = _earnedAddress;
+
+            uniRouterAddress = _uniRouterAddress;
+
+            earnedToPMPPath = [earnedAddress, wbnbAddress, PMPAddress];
+            if (wbnbAddress == earnedAddress) {
+                earnedToPMPPath = [wbnbAddress, PMPAddress];
             }
-            pool.want.safeTransfer(address(msg.sender), _wantAmt);
+
+            earnedToToken0Path = [earnedAddress, wbnbAddress, token0Address];
+            if (wbnbAddress == token0Address) {
+                earnedToToken0Path = [earnedAddress, wbnbAddress];
+            }
+
+            earnedToToken1Path = [earnedAddress, wbnbAddress, token1Address];
+            if (wbnbAddress == token1Address) {
+                earnedToToken1Path = [earnedAddress, wbnbAddress];
+            }
+
+            token0ToEarnedPath = [token0Address, wbnbAddress, earnedAddress];
+            if (wbnbAddress == token0Address) {
+                token0ToEarnedPath = [wbnbAddress, earnedAddress];
+            }
+
+            token1ToEarnedPath = [token1Address, wbnbAddress, earnedAddress];
+            if (wbnbAddress == token1Address) {
+                token1ToEarnedPath = [wbnbAddress, earnedAddress];
+            }
         }
-        uint256 pending =
-            user.shares.mul(pool.accPMPPerShare).div(1e12).sub(
-                user.rewardDebt
-            );
-        if (pending > 0) {
-            uint paidReferral = payReferral(pending, PMPTokenAddress);
-            safePMPTransfer(msg.sender, pending.sub(paidReferral));
-        }
-        user.rewardDebt = user.shares.mul(pool.accPMPPerShare).div(1e12);
+
+        transferOwnership(pumpyFarmAddress);
     }
     
     function getMultiplier(uint256 _from, uint256 _to)
@@ -1732,96 +1849,341 @@ contract PumpyReferral is Ownable, Referral {
         view
         returns (uint256)
     {
-        if (IERC20(PMPTokenAddress).totalSupply() >= PMPMaxSupply) {
+        if (block.number >= bonusEndBlock) {
             return 0;
         }
         return _to.sub(_from);
     }
     
-    function pendingPMP(uint256 _pid, address _user)
-        external
-        view
+    // Receives new deposits from user
+    function deposit(address _userAddress, uint256 _wantAmt)
+        public
+        onlyOwner
+        whenNotPaused
         returns (uint256)
     {
-        IPumpyFarm.PoolInfo memory pool = IPumpyFarm(pumpyFarmAddress).poolInfo(_pid);
-        UserInfo storage user = userInfo[_pid][_user];
-        uint256 accPMPPerShare = pool.accPMPPerShare;
-        uint256 sharesTotal = IStrategy(pool.strat).sharesTotal();
-        if (block.number > pool.lastRewardBlock && sharesTotal != 0) {
-            uint256 multiplier =
-                getMultiplier(pool.lastRewardBlock, block.number);
-            uint256 PMPReward =
-                multiplier.mul(PMPPerBlock).mul(pool.allocPoint).div(
-                    IPumpyFarm(pumpyFarmAddress).totalAllocPoint()
-                );
-            accPMPPerShare = accPMPPerShare.add(
-                PMPReward.mul(1e12).div(sharesTotal)
+        IERC20(wantAddress).safeTransferFrom(
+            address(msg.sender),
+            address(this),
+            _wantAmt
+        );
+        
+        UserInfo storage user = userInfo[_userAddress];
+        IAlpacaFarm.PoolInfo memory pool = IAlpacaFarm(farmContractAddress).poolInfo(pid);
+        uint256 accAlpacaPerShareTilBonusEnd = pool.accAlpacaPerShareTilBonusEnd;
+
+        uint256 sharesAdded = _wantAmt;
+        if (wantLockedTotal > 0) {
+            sharesAdded = _wantAmt
+                .mul(sharesTotal)
+                .mul(entranceFeeFactor)
+                .div(wantLockedTotal)
+                .div(entranceFeeFactorMax);
+        }
+        sharesTotal = sharesTotal.add(sharesAdded);
+
+        _farm();
+        if (user.amount > 0) {
+            uint256 countBlock = getMultiplier(user.lastBlockReward, block.number);
+            uint256 accAmount = countBlock.mul(user.amount);
+            user.accSharesLockTokens = user.accSharesLockTokens.add(accAmount);
+            user.lastBlockReward = block.number;
+            user.amount = userInfo[_userAddress].amount.add(sharesAdded);
+            totalSharesLockToken = totalSharesLockToken.add(accAmount);
+        }
+
+        return sharesAdded;
+    }
+
+    function farm() public nonReentrant {
+        _farm();
+    }
+
+    function _farm() internal {
+        uint256 wantAmt = IERC20(wantAddress).balanceOf(address(this));
+        wantLockedTotal = wantLockedTotal.add(wantAmt);
+        IERC20(wantAddress).safeIncreaseAllowance(farmContractAddress, wantAmt);
+
+        IAlpacaFarm(farmContractAddress).deposit(address(this), pid, wantAmt);
+    }
+
+    function withdraw(address _userAddress, uint256 _wantAmt)
+        public
+        onlyOwner
+        nonReentrant
+        returns (uint256)
+    {
+        require(_wantAmt > 0, "_wantAmt <= 0");
+        
+        UserInfo storage user = userInfo[_userAddress];
+        IAlpacaFarm.PoolInfo memory pool = IAlpacaFarm(farmContractAddress).poolInfo(pid);
+        uint256 accAlpacaPerShareTilBonusEnd = pool.accAlpacaPerShareTilBonusEnd;
+        
+        IAlpacaFarm(farmContractAddress).withdraw(address(this), pid, _wantAmt);
+
+        uint256 wantAmt = IERC20(wantAddress).balanceOf(address(this));
+        if (_wantAmt > wantAmt) {
+            _wantAmt = wantAmt;
+        }
+
+        if (wantLockedTotal < _wantAmt) {
+            _wantAmt = wantLockedTotal;
+        }
+
+        uint256 sharesRemoved = _wantAmt.mul(sharesTotal).div(wantLockedTotal);
+        if (sharesRemoved > sharesTotal) {
+            sharesRemoved = sharesTotal;
+        }
+        sharesTotal = sharesTotal.sub(sharesRemoved);
+        uint256 countBlock = getMultiplier(user.lastBlockReward, block.number);
+        uint256 accAmount = countBlock.mul(user.amount);
+        user.accSharesLockTokens = user.accSharesLockTokens.add(accAmount);
+        user.lastBlockReward = block.number;
+        user.amount = userInfo[_userAddress].amount.add(sharesRemoved);
+        totalSharesLockToken = totalSharesLockToken.add(accAmount);
+        wantLockedTotal = wantLockedTotal.sub(_wantAmt);
+
+        IERC20(wantAddress).safeTransfer(pumpyFarmAddress, _wantAmt);
+
+        return sharesRemoved;
+    }
+    
+    function pendingBonusAlpaca(address _user) public view returns (uint256) {
+        UserInfo storage user = userInfo[_user];
+        uint256 lockedTokens = IAlpacaToken(earnedAddress).lockOf(address(this));
+        
+        return lockedTokens.mul(user.accSharesLockTokens).div(totalSharesLockToken);
+    }
+    
+    
+    // Withdraw locked tokens
+    // This function will be available after 6699649 block
+    function withdrawBonus() public {
+        require(block.number >= 6699649, "Will be available after 6699649 block");
+        UserInfo storage user = userInfo[msg.sender];
+        if (!isWithdrawLockTokensAllowed) {
+            endAmountLockTokens = IAlpacaToken(earnedAddress).canUnlockAmount(address(this));
+            IAlpacaToken(earnedAddress).unlock();
+            isWithdrawLockTokensAllowed = true;
+        }
+        uint256 lockTokens = user.accSharesLockTokens.mul(totalSharesLockToken);
+        
+        IERC20(earnedAddress).safeTransfer(address(msg.sender), lockTokens);
+    }
+
+    // 1. Harvest farm tokens
+    // 2. Converts farm tokens into want tokens
+    // 3. Deposits want tokens
+
+    function earn() public whenNotPaused {
+        require(isAutoComp, "!isAutoComp");
+        if (onlyGov) {
+            require(msg.sender == govAddress, "Not authorised");
+        }
+
+        // Harvest farm tokens
+        IAlpacaFarm(farmContractAddress).withdraw(address(this), pid, 0); 
+
+        // Converts farm tokens into want tokens
+        uint256 earnedAmt = IERC20(earnedAddress).balanceOf(address(this));
+
+        earnedAmt = distributeFees(earnedAmt);
+        earnedAmt = buyBack(earnedAmt);
+
+        if (isCAKEStaking) {
+            lastEarnBlock = block.number;
+            _farm();
+            return;
+        }
+
+        IERC20(earnedAddress).safeIncreaseAllowance(
+            uniRouterAddress,
+            earnedAmt
+        );
+
+        if (earnedAddress != token0Address) {
+            // Swap half earned to token0
+            IPancakeRouter02(uniRouterAddress)
+                .swapExactTokensForTokensSupportingFeeOnTransferTokens(
+                earnedAmt.div(2),
+                0,
+                earnedToToken0Path,
+                address(this),
+                now + 60
             );
         }
-        return user.shares.mul(accPMPPerShare).div(1e12).sub(user.rewardDebt);
-    }
-    
-    function stakedWantTokens(uint256 _pid, address _user)
-        view
-        public
-        returns (uint256)
-    {
-        IPumpyFarm.PoolInfo memory pool = IPumpyFarm(pumpyFarmAddress).poolInfo(_pid);
-        UserInfo storage user = userInfo[_pid][_user];
 
-        uint256 sharesTotal = IStrategy(pool.strat).sharesTotal();
-        uint256 wantLockedTotal =
-            IStrategy(pool.strat).wantLockedTotal();
-        if (sharesTotal == 0) {
-            return 0;
+        if (earnedAddress != token1Address) {
+            // Swap half earned to token1
+            IPancakeRouter02(uniRouterAddress)
+                .swapExactTokensForTokensSupportingFeeOnTransferTokens(
+                earnedAmt.div(2),
+                0,
+                earnedToToken1Path,
+                address(this),
+                now + 60
+            );
         }
-        return user.shares.mul(wantLockedTotal).div(sharesTotal);
-    }
-  
-    function safePMPTransfer(address _to, uint256 _PMPAmt) internal {
-        uint256 PMPBal = IERC20(PMPTokenAddress).balanceOf(address(this));
-        if (_PMPAmt > PMPBal) {
-            IERC20(PMPTokenAddress).transfer(_to, PMPBal);
-        } else {
-            IERC20(PMPTokenAddress).transfer(_to, _PMPAmt);
+
+        // Get want tokens, ie. add liquidity
+        uint256 token0Amt = IERC20(token0Address).balanceOf(address(this));
+        uint256 token1Amt = IERC20(token1Address).balanceOf(address(this));
+        if (token0Amt > 0 && token1Amt > 0) {
+            IERC20(token0Address).safeIncreaseAllowance(
+                uniRouterAddress,
+                token0Amt
+            );
+            IERC20(token1Address).safeIncreaseAllowance(
+                uniRouterAddress,
+                token1Amt
+            );
+            IPancakeRouter02(uniRouterAddress).addLiquidity(
+                token0Address,
+                token1Address,
+                token0Amt,
+                token1Amt,
+                0,
+                0,
+                address(this),
+                now + 60
+            );
         }
+
+        lastEarnBlock = block.number;
+
+        _farm();
     }
-    
-    /**
-   * @dev This will calc and pay referral to uplines instantly
-   * @param value The number tokens will be calculated in referral process
-   * @return the total referral bonus paid
-   */
-    function payReferral(uint256 value, address wantAddress) internal returns(uint256){
-        Account memory userAccount = accounts[msg.sender];
-        uint totalReferal;
-    
-        for (uint i; i < levelRate.length; i++) {
-            address parent = userAccount.referrer;
-            Account storage parentAccount = accounts[userAccount.referrer];
-            
-            uint c = value.mul(referralBonus).div(decimals);
-            c = c.mul(levelRate[i]).div(decimals);
-    
-            if (parent == address(0)) {
-                // Send to leaderPoolsAddress
-                IERC20(wantAddress).safeTransfer(leaderPoolsAddress, c);
-            } else {
-                // Check balance in PMP pool except for Treasure address
-                if (parent == treasure || userInfo[poolStakingPid][parent].shares >= pmpThreshold[i]) {
-                    totalReferal = totalReferal.add(c);
-            
-                    parentAccount.reward = parentAccount.reward.add(c);
-                    IERC20(wantAddress).safeTransfer(parent, c);
-                    emit PaidReferral(msg.sender, parent, c, i + 1);
-                } else {
-                    // Send to leaderPoolsAddress
-                    IERC20(wantAddress).safeTransfer(leaderPoolsAddress, c);
-                }
-                userAccount = parentAccount;
+
+    function buyBack(uint256 _earnedAmt) internal returns (uint256) {
+        if (buyBackRate <= 0) {
+            return _earnedAmt;
+        }
+
+        uint256 buyBackAmt = _earnedAmt.mul(buyBackRate).div(buyBackRateMax);
+
+        IERC20(earnedAddress).safeIncreaseAllowance(
+            uniRouterAddress,
+            buyBackAmt
+        );
+
+        IPancakeRouter02(uniRouterAddress)
+            .swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            buyBackAmt,
+            0,
+            earnedToPMPPath,
+            buyBackAddress,
+            now + 60
+        );
+
+        return _earnedAmt.sub(buyBackAmt);
+    }
+
+    function distributeFees(uint256 _earnedAmt) internal returns (uint256) {
+        if (_earnedAmt > 0) {
+            // Performance fee
+            if (controllerFee > 0) {
+                uint256 fee =
+                    _earnedAmt.mul(controllerFee).div(controllerFeeMax);
+                IERC20(earnedAddress).safeTransfer(govAddress, fee);
+                _earnedAmt = _earnedAmt.sub(fee);
             }
         }
-    
-        return totalReferal;
+
+        return _earnedAmt;
+    }
+
+    function convertDustToEarned() public whenNotPaused {
+        require(isAutoComp, "!isAutoComp");
+        require(!isCAKEStaking, "isCAKEStaking");
+
+        // Converts dust tokens into earned tokens, which will be reinvested on the next earn().
+
+        // Converts token0 dust (if any) to earned tokens
+        uint256 token0Amt = IERC20(token0Address).balanceOf(address(this));
+        if (token0Address != earnedAddress && token0Amt > 0) {
+            IERC20(token0Address).safeIncreaseAllowance(
+                uniRouterAddress,
+                token0Amt
+            );
+
+            // Swap all dust tokens to earned tokens
+            IPancakeRouter02(uniRouterAddress)
+                .swapExactTokensForTokensSupportingFeeOnTransferTokens(
+                token0Amt,
+                0,
+                token0ToEarnedPath,
+                address(this),
+                now + 60
+            );
+        }
+
+        // Converts token1 dust (if any) to earned tokens
+        uint256 token1Amt = IERC20(token1Address).balanceOf(address(this));
+        if (token1Address != earnedAddress && token1Amt > 0) {
+            IERC20(token1Address).safeIncreaseAllowance(
+                uniRouterAddress,
+                token1Amt
+            );
+
+            // Swap all dust tokens to earned tokens
+            IPancakeRouter02(uniRouterAddress)
+                .swapExactTokensForTokensSupportingFeeOnTransferTokens(
+                token1Amt,
+                0,
+                token1ToEarnedPath,
+                address(this),
+                now + 60
+            );
+        }
+    }
+
+    function pause() public {
+        require(msg.sender == govAddress, "Not authorised");
+        _pause();
+    }
+
+    function unpause() external {
+        require(msg.sender == govAddress, "Not authorised");
+        _unpause();
+    }
+
+    function setEntranceFeeFactor(uint256 _entranceFeeFactor) public {
+        require(msg.sender == govAddress, "Not authorised");
+        require(_entranceFeeFactor > entranceFeeFactorLL, "!safe - too low");
+        require(_entranceFeeFactor <= entranceFeeFactorMax, "!safe - too high");
+        entranceFeeFactor = _entranceFeeFactor;
+    }
+
+    function setControllerFee(uint256 _controllerFee) public {
+        require(msg.sender == govAddress, "Not authorised");
+        require(_controllerFee <= controllerFeeUL, "too high");
+        controllerFee = _controllerFee;
+    }
+
+    function setbuyBackRate(uint256 _buyBackRate) public {
+        require(msg.sender == govAddress, "Not authorised");
+        require(buyBackRate <= buyBackRateUL, "too high");
+        buyBackRate = _buyBackRate;
+    }
+
+    function setGov(address _govAddress) public {
+        require(msg.sender == govAddress, "!gov");
+        govAddress = _govAddress;
+    }
+
+    function setOnlyGov(bool _onlyGov) public {
+        require(msg.sender == govAddress, "!gov");
+        onlyGov = _onlyGov;
+    }
+
+    function inCaseTokensGetStuck(
+        address _token,
+        uint256 _amount,
+        address _to
+    ) public {
+        require(msg.sender == govAddress, "!gov");
+        require(_token != earnedAddress, "!safe");
+        require(_token != wantAddress, "!safe");
+        IERC20(_token).safeTransfer(_to, _amount);
     }
 }
