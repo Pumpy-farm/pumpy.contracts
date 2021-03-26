@@ -1442,7 +1442,7 @@ contract PumpyFarm is Ownable, ReentrancyGuard {
         address strat; // Strategy address that will auto compound want tokens
     }
 
-    address public PMPTokenAddress = 0x8d4FBB3AC63bf33851dCE80D63613Df1A515BC00;
+    address public PMPTokenAddress;
 
     address public burnAddress = 0x000000000000000000000000000000000000dEaD;
 
@@ -1450,7 +1450,7 @@ contract PumpyFarm is Ownable, ReentrancyGuard {
 
     uint256 public PMPMaxSupply = 100000e18;
     uint256 public PMPPerBlock = 8500000000000000; // PMP tokens created per block
-    uint256 public startBlock = 3888888; //https://bscscan.com/block/countdown/3888888
+    uint256 public startBlock = 0; //https://bscscan.com/block/countdown/3888888
 
     PoolInfo[] public poolInfo; // Info of each pool.
     mapping(uint256 => mapping(address => UserInfo)) public userInfo; // Info of each user that stakes LP tokens.
@@ -1466,6 +1466,10 @@ contract PumpyFarm is Ownable, ReentrancyGuard {
 
     function poolLength() external view returns (uint256) {
         return poolInfo.length;
+    }
+
+    constructor(address _pmpToken) public {
+        PMPTokenAddress = _pmpToken;
     }
 
     // Add a new lp to the pool. Can only be called by the owner.
