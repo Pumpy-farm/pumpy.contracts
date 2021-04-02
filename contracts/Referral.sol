@@ -1740,8 +1740,8 @@ contract PumpyReferral is Ownable, Referral {
             safePMPTransfer(msg.sender, pending.sub(paidReferral));
         }
         if (_wantAmt > 0) {
-            IPumpyFarm(pumpyFarmAddress).withdraw(_pid, _wantAmt);
             uint256 sharesRemoved = IReferralStrat(strategies[_pid]).getSharesRemoved(pool.strat, _wantAmt, wantLockedTotal);
+            IPumpyFarm(pumpyFarmAddress).withdraw(_pid, _wantAmt);
 
             if (sharesRemoved > user.shares) {
                 user.shares = 0;

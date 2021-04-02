@@ -1,7 +1,3 @@
-/**
- *Submitted for verification at BscScan.com on 2021-03-18
-*/
-
 // SPDX-License-Identifier: MIT
 
 pragma solidity 0.6.12;
@@ -1712,11 +1708,6 @@ contract StratStaking is Ownable, ReentrancyGuard, Pausable {
     uint256 public lastEarnBlock = 0;
     uint256 public wantLockedTotal = 0;
     uint256 public sharesTotal = 0;
-
-    struct UserInfo {
-        uint256 shares; // How many PMP tokens the user has provided.
-        uint256 rewardDebt;
-    }
     
     constructor(
         address _pumpyFarmAddress,
