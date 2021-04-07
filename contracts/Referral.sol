@@ -1606,7 +1606,7 @@ contract PumpyReferral is Ownable, Referral {
     }
 
     struct WithdrawInfo {
-        boolean isWithdrawActive;
+        bool isWithdrawActive;
         uint256 wantLockedTotal;
         uint256 sharesTotal;
     }
@@ -1711,13 +1711,13 @@ contract PumpyReferral is Ownable, Referral {
     
         if (!hasReferrer(msg.sender)) {
             // Treasure address as referrer by deafult
-            boolean isValid;
+            bool isValid;
             if (_referrer != EMPTY_REFERRER) {
                 isValid = addReferrer(_referrer);
             } else {
                 isValid = addReferrer(treasure);
             }
-            require(isValid, "Referrer should be valid")
+            require(isValid, "Referrer should be valid");
         }
     }
   
@@ -1877,8 +1877,8 @@ contract PumpyReferral is Ownable, Referral {
         return totalReferal;
     }
 
-    function _emergencyWithdrawStart(_pid) internal {
-        WithdrawInfo info = withdrawInfo[_pid];
+    function _emergencyWithdrawStart(uint256 _pid) internal {
+        WithdrawInfo storage info = withdrawInfo[_pid];
 
         if (!info.isWithdrawActive) {
             IPumpyFarm.PoolInfo memory pool = IPumpyFarm(pumpyFarmAddress).poolInfo(_pid);
@@ -1893,10 +1893,10 @@ contract PumpyReferral is Ownable, Referral {
     }
     
     function emergencyWithdraw(uint256 _pid) public {
-        _emergencyWithdraw(_pid);
+        _emergencyWithdrawStart(_pid);
 
         IPumpyFarm.PoolInfo memory pool = IPumpyFarm(pumpyFarmAddress).poolInfo(_pid);
-        WithdrawInfo info = withdrawInfo[_pid];
+        WithdrawInfo storage info = withdrawInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
 
         uint256 amount = user.shares.mul(info.wantLockedTotal).div(info.sharesTotal);
