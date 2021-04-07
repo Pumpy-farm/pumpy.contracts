@@ -1604,9 +1604,16 @@ contract PumpyReferral is Ownable, Referral {
         uint256 shares;
         uint256 rewardDebt;
     }
+
+    struct WithdrawInfo {
+        boolean isWithdrawActive;
+        uint256 wantLockedTotal;
+        uint256 sharesTotal;
+    }
     
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
     mapping(uint256 => address) public strategies;
+    mapping(uint256 => WithdrawInfo) public withdrawInfo;
     uint256[] public pmpThreshold;
     
     event EmergencyWithdraw(
@@ -1704,11 +1711,13 @@ contract PumpyReferral is Ownable, Referral {
     
         if (!hasReferrer(msg.sender)) {
             // Treasure address as referrer by deafult
+            boolean isValid;
             if (_referrer != EMPTY_REFERRER) {
-                addReferrer(_referrer);
+                isValid = addReferrer(_referrer);
             } else {
-                addReferrer(treasure);
+                isValid = addReferrer(treasure);
             }
+            require(isValid, "Referrer should be valid")
         }
     }
   
@@ -1838,6 +1847,7 @@ contract PumpyReferral is Ownable, Referral {
                 // Send to leaderPoolsAddress
                 IERC20(wantAddress).safeTransfer(leaderPoolsAddress, c);
                 emit PaidLeaderPool(c, parent);
+                totalReferal = totalReferal.add(c);
             } else {
                 // Check balance in PMP pool except for Treasure address
                 if (parent == treasure || poolStakingAddress == address(0) || stakedWantTokens(poolStakingPid, parent) >= pmpThreshold[i]) {
@@ -1858,6 +1868,7 @@ contract PumpyReferral is Ownable, Referral {
                     // Send to leaderPoolsAddress
                     IERC20(wantAddress).safeTransfer(leaderPoolsAddress, c);
                     emit PaidLeaderPool(c, parent);
+                    totalReferal = totalReferal.add(c);
                 }
                 userAccount = parentAccount;
             }
@@ -1865,17 +1876,30 @@ contract PumpyReferral is Ownable, Referral {
     
         return totalReferal;
     }
+
+    function _emergencyWithdrawStart(_pid) internal {
+        WithdrawInfo info = withdrawInfo[_pid];
+
+        if (!info.isWithdrawActive) {
+            IPumpyFarm.PoolInfo memory pool = IPumpyFarm(pumpyFarmAddress).poolInfo(_pid);
+            uint256 wantLockedTotal =
+                IStrategy(pool.strat).wantLockedTotal();
+            uint256 sharesTotal = IStrategy(pool.strat).sharesTotal();
+            info.isWithdrawActive = true;
+            info.sharesTotal = sharesTotal;
+            info.wantLockedTotal = wantLockedTotal;
+            IPumpyFarm(pumpyFarmAddress).emergencyWithdraw(_pid);
+        }
+    }
     
     function emergencyWithdraw(uint256 _pid) public {
-        IPumpyFarm.PoolInfo memory pool = IPumpyFarm(pumpyFarmAddress).poolInfo(_pid);
-        UserInfo storage user = userInfo[_pid][msg.sender];
-        
-        IPumpyFarm(pumpyFarmAddress).emergencyWithdraw(_pid);
+        _emergencyWithdraw(_pid);
 
-        uint256 wantLockedTotal =
-            IStrategy(pool.strat).wantLockedTotal();
-        uint256 sharesTotal = IStrategy(pool.strat).sharesTotal();
-        uint256 amount = user.shares.mul(wantLockedTotal).div(sharesTotal);
+        IPumpyFarm.PoolInfo memory pool = IPumpyFarm(pumpyFarmAddress).poolInfo(_pid);
+        WithdrawInfo info = withdrawInfo[_pid];
+        UserInfo storage user = userInfo[_pid][msg.sender];
+
+        uint256 amount = user.shares.mul(info.wantLockedTotal).div(info.sharesTotal);
 
         pool.want.safeTransfer(address(msg.sender), amount);
         emit EmergencyWithdraw(msg.sender, _pid, amount);
