@@ -1443,11 +1443,10 @@ contract ReferralStratStaking {
     }
     
     function getSharesRemoved(address _strat, uint256 _wantAmt, uint256 _wantLockedTotal) public view returns (uint256) {
-        uint256 sharesRemoved = _wantAmt;
         address wantAddress = IStrategy(_strat).wantAddress();
         uint256 wantLockedTotal = IERC20(wantAddress).balanceOf(_strat);
         uint256 sharesTotal = IStrategy(_strat).sharesTotal();
-        _wantAmt.mul(sharesTotal).div(wantLockedTotal);
+        uint256 sharesRemoved = _wantAmt.mul(sharesTotal).div(wantLockedTotal);
         if (sharesRemoved > sharesTotal) {
             sharesRemoved = sharesTotal;
         }
