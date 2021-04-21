@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: MIT
 
 pragma experimental ABIEncoderV2;
-pragma solidity ^0.6.12;
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 // import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol";
 abstract contract Context {
-    function _msgSender() internal view virtual returns (address payable) {
+    function _msgSender() internal view virtual returns (address) {
         return msg.sender;
     }
 
-    function _msgData() internal view virtual returns (bytes memory) {
+    function _msgData() internal view virtual returns (bytes calldata) {
         this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
         return msg.data;
     }
@@ -956,326 +959,6 @@ library SafeERC20 {
     }
 }
 
-// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/EnumerableSet.sol";
-library EnumerableSet {
-    // To implement this library for multiple types with as little code
-    // repetition as possible, we write it in terms of a generic Set type with
-    // bytes32 values.
-    // The Set implementation uses private functions, and user-facing
-    // implementations (such as AddressSet) are just wrappers around the
-    // underlying Set.
-    // This means that we can only create new EnumerableSets for types that fit
-    // in bytes32.
-
-    struct Set {
-        // Storage of set values
-        bytes32[] _values;
-        // Position of the value in the `values` array, plus 1 because index 0
-        // means a value is not in the set.
-        mapping(bytes32 => uint256) _indexes;
-    }
-
-    /**
-     * @dev Add a value to a set. O(1).
-     *
-     * Returns true if the value was added to the set, that is if it was not
-     * already present.
-     */
-    function _add(Set storage set, bytes32 value) private returns (bool) {
-        if (!_contains(set, value)) {
-            set._values.push(value);
-            // The value is stored at length-1, but we add 1 to all indexes
-            // and use 0 as a sentinel value
-            set._indexes[value] = set._values.length;
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * @dev Removes a value from a set. O(1).
-     *
-     * Returns true if the value was removed from the set, that is if it was
-     * present.
-     */
-    function _remove(Set storage set, bytes32 value) private returns (bool) {
-        // We read and store the value's index to prevent multiple reads from the same storage slot
-        uint256 valueIndex = set._indexes[value];
-
-        if (valueIndex != 0) {
-            // Equivalent to contains(set, value)
-            // To delete an element from the _values array in O(1), we swap the element to delete with the last one in
-            // the array, and then remove the last element (sometimes called as 'swap and pop').
-            // This modifies the order of the array, as noted in {at}.
-
-            uint256 toDeleteIndex = valueIndex - 1;
-            uint256 lastIndex = set._values.length - 1;
-
-            // When the value to delete is the last one, the swap operation is unnecessary. However, since this occurs
-            // so rarely, we still do the swap anyway to avoid the gas cost of adding an 'if' statement.
-
-            bytes32 lastvalue = set._values[lastIndex];
-
-            // Move the last value to the index where the value to delete is
-            set._values[toDeleteIndex] = lastvalue;
-            // Update the index for the moved value
-            set._indexes[lastvalue] = toDeleteIndex + 1; // All indexes are 1-based
-
-            // Delete the slot where the moved value was stored
-            set._values.pop();
-
-            // Delete the index for the deleted slot
-            delete set._indexes[value];
-
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * @dev Returns true if the value is in the set. O(1).
-     */
-    function _contains(Set storage set, bytes32 value)
-        private
-        view
-        returns (bool)
-    {
-        return set._indexes[value] != 0;
-    }
-
-    /**
-     * @dev Returns the number of values on the set. O(1).
-     */
-    function _length(Set storage set) private view returns (uint256) {
-        return set._values.length;
-    }
-
-    /**
-     * @dev Returns the value stored at position `index` in the set. O(1).
-     *
-     * Note that there are no guarantees on the ordering of values inside the
-     * array, and it may change when more values are added or removed.
-     *
-     * Requirements:
-     *
-     * - `index` must be strictly less than {length}.
-     */
-    function _at(Set storage set, uint256 index)
-        private
-        view
-        returns (bytes32)
-    {
-        require(
-            set._values.length > index,
-            "EnumerableSet: index out of bounds"
-        );
-        return set._values[index];
-    }
-
-    // Bytes32Set
-
-    struct Bytes32Set {
-        Set _inner;
-    }
-
-    /**
-     * @dev Add a value to a set. O(1).
-     *
-     * Returns true if the value was added to the set, that is if it was not
-     * already present.
-     */
-    function add(Bytes32Set storage set, bytes32 value)
-        internal
-        returns (bool)
-    {
-        return _add(set._inner, value);
-    }
-
-    /**
-     * @dev Removes a value from a set. O(1).
-     *
-     * Returns true if the value was removed from the set, that is if it was
-     * present.
-     */
-    function remove(Bytes32Set storage set, bytes32 value)
-        internal
-        returns (bool)
-    {
-        return _remove(set._inner, value);
-    }
-
-    /**
-     * @dev Returns true if the value is in the set. O(1).
-     */
-    function contains(Bytes32Set storage set, bytes32 value)
-        internal
-        view
-        returns (bool)
-    {
-        return _contains(set._inner, value);
-    }
-
-    /**
-     * @dev Returns the number of values in the set. O(1).
-     */
-    function length(Bytes32Set storage set) internal view returns (uint256) {
-        return _length(set._inner);
-    }
-
-    /**
-     * @dev Returns the value stored at position `index` in the set. O(1).
-     *
-     * Note that there are no guarantees on the ordering of values inside the
-     * array, and it may change when more values are added or removed.
-     *
-     * Requirements:
-     *
-     * - `index` must be strictly less than {length}.
-     */
-    function at(Bytes32Set storage set, uint256 index)
-        internal
-        view
-        returns (bytes32)
-    {
-        return _at(set._inner, index);
-    }
-
-    // AddressSet
-
-    struct AddressSet {
-        Set _inner;
-    }
-
-    /**
-     * @dev Add a value to a set. O(1).
-     *
-     * Returns true if the value was added to the set, that is if it was not
-     * already present.
-     */
-    function add(AddressSet storage set, address value)
-        internal
-        returns (bool)
-    {
-        return _add(set._inner, bytes32(uint256(value)));
-    }
-
-    /**
-     * @dev Removes a value from a set. O(1).
-     *
-     * Returns true if the value was removed from the set, that is if it was
-     * present.
-     */
-    function remove(AddressSet storage set, address value)
-        internal
-        returns (bool)
-    {
-        return _remove(set._inner, bytes32(uint256(value)));
-    }
-
-    /**
-     * @dev Returns true if the value is in the set. O(1).
-     */
-    function contains(AddressSet storage set, address value)
-        internal
-        view
-        returns (bool)
-    {
-        return _contains(set._inner, bytes32(uint256(value)));
-    }
-
-    /**
-     * @dev Returns the number of values in the set. O(1).
-     */
-    function length(AddressSet storage set) internal view returns (uint256) {
-        return _length(set._inner);
-    }
-
-    /**
-     * @dev Returns the value stored at position `index` in the set. O(1).
-     *
-     * Note that there are no guarantees on the ordering of values inside the
-     * array, and it may change when more values are added or removed.
-     *
-     * Requirements:
-     *
-     * - `index` must be strictly less than {length}.
-     */
-    function at(AddressSet storage set, uint256 index)
-        internal
-        view
-        returns (address)
-    {
-        return address(uint256(_at(set._inner, index)));
-    }
-
-    // UintSet
-
-    struct UintSet {
-        Set _inner;
-    }
-
-    /**
-     * @dev Add a value to a set. O(1).
-     *
-     * Returns true if the value was added to the set, that is if it was not
-     * already present.
-     */
-    function add(UintSet storage set, uint256 value) internal returns (bool) {
-        return _add(set._inner, bytes32(value));
-    }
-
-    /**
-     * @dev Removes a value from a set. O(1).
-     *
-     * Returns true if the value was removed from the set, that is if it was
-     * present.
-     */
-    function remove(UintSet storage set, uint256 value)
-        internal
-        returns (bool)
-    {
-        return _remove(set._inner, bytes32(value));
-    }
-
-    /**
-     * @dev Returns true if the value is in the set. O(1).
-     */
-    function contains(UintSet storage set, uint256 value)
-        internal
-        view
-        returns (bool)
-    {
-        return _contains(set._inner, bytes32(value));
-    }
-
-    /**
-     * @dev Returns the number of values on the set. O(1).
-     */
-    function length(UintSet storage set) internal view returns (uint256) {
-        return _length(set._inner);
-    }
-
-    /**
-     * @dev Returns the value stored at position `index` in the set. O(1).
-     *
-     * Note that there are no guarantees on the ordering of values inside the
-     * array, and it may change when more values are added or removed.
-     *
-     * Requirements:
-     *
-     * - `index` must be strictly less than {length}.
-     */
-    function at(UintSet storage set, uint256 index)
-        internal
-        view
-        returns (uint256)
-    {
-        return uint256(_at(set._inner, index));
-    }
-}
-
 // import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol";
 abstract contract Ownable is Context {
     address private _owner;
@@ -1435,52 +1118,31 @@ interface IReferralStrat {
     function getSharesRemoved(address _strat, uint256 _wantAmt, uint256 _wantLockedTotal) external view returns (uint256);
 }
 
-interface ReferralStorage {
-    struct Account {
-      address referrer;
-      uint reward;
-      uint referredCount;
-      uint lastActiveTimestamp;
-    }
-
-    struct UserInfo {
-        uint256 shares;
-        uint256 rewardDebt;
-    }
-
-    function getUser(uint256 _pid, address _address) external view returns (UserInfo memory);
-    function accounts(address _account) external view returns (Account memory);
-}
-
-contract PumpyReferral is Ownable {
+contract PumpyReferral is Ownable, Initializable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
+
+    bool private initialized;
     
-    address public pumpyFarmAddress = 0x29142471a5c33a2a4cD7C8f18Ce881F699b0c681;
-    address public PMPTokenAddress = 0x8d4FBB3AC63bf33851dCE80D63613Df1A515BC00;
-    address constant EMPTY_REFERRER = 0x0000000000000000000000000000000000000000;
-    uint256 constant public PMPMaxSupply = 100000e18;
-    uint256 constant public PMPPerBlock = 8500000000000000;
+    address public pumpyFarmAddress;
+    address public PMPTokenAddress;
+    uint256 public PMPMaxSupply;
+    uint256 public PMPPerBlock;
     
     address public leaderPoolsAddress;
     uint256 public poolStakingPid; // In PumpyFarm poolInfo
     address public poolStakingAddress;
-    uint256 public rateStaking = 0;
+    uint256 public rateStaking;
     address public treasure; // Deafult treasure timelock contract
-
-    bool public isStopped = false;
   
-    struct WithdrawInfo {
-        bool isWithdrawActive;
-        uint256 wantLockedTotal;
-        uint256 sharesTotal;
+    struct UserInfo {
+        uint256 shares;
+        uint256 rewardDebt;
     }
     
+    mapping(uint256 => mapping(address => UserInfo)) public userInfo;
     mapping(uint256 => address) public strategies;
-    mapping(uint256 => WithdrawInfo) public withdrawInfo;
     uint256[] public pmpThreshold;
-
-    ReferralStorage public referralStorage;
 
     /**
     * @dev Max referral level depth
@@ -1492,6 +1154,21 @@ contract PumpyReferral is Ownable {
     */
     uint8 constant MAX_REFEREE_BONUS_LEVEL = 3;
 
+
+    /**
+    * @dev The struct of account information
+    * @param referrer The referrer addresss
+    * @param reward The total referral reward of an address
+    * @param referredCount The total referral amount of an address
+    * @param lastActiveTimestamp The last active timestamp of an address
+    */
+    struct Account {
+        address referrer;
+        uint reward;
+        uint referredCount;
+        uint lastActiveTimestamp;
+    }
+
     /**
     * @dev The struct of referee amount to bonus rate
     * @param lowerBound The minial referee amount
@@ -1501,22 +1178,14 @@ contract PumpyReferral is Ownable {
         uint lowerBound;
         uint rate;
     }
-    
-    event EmergencyWithdraw(
-        address indexed user,
-        uint256 indexed pid,
-        uint256 amount
-    );
-
-    event PaidTreasure(uint amount);
-    event PaidLeaderPool(uint amount, address parent);
-    event PaidStakingPool(uint amount);
 
     event RegisteredReferer(address referee, address referrer);
     event RegisteredRefererFailed(address referee, address referrer, string reason);
     event PaidReferral(address from, address to, uint amount, uint level);
     event UpdatedUserLastActiveTime(address user, uint timestamp);
 
+    mapping(address => Account) public accounts;
+    
     /**
     * _decimals The base decimals for float calc, for example 1000
     * _referralBonus The total referral bonus rate, which will divide by decimals. For example, If you will like to set as 5%, it can set as 50 when decimals is 1000.
@@ -1524,24 +1193,37 @@ contract PumpyReferral is Ownable {
     * _onlyRewardActiveReferrers The flag to enable not paying to inactive uplines.
     * _levelRate The bonus rate for each level, which will divide by decimals too. The max depth is MAX_REFER_DEPTH.
     */
-    uint256[] levelRate;
-    uint256 constant referralBonus = 1000;
-    uint256 constant decimals = 10000;
-    uint256 constant secondsUntilInactive = 0;
-    bool constant onlyRewardActiveReferrers = false;
-    RefereeBonusRate[] refereeBonusRateMap;
+    uint256[] public levelRate;
+    uint256 public referralBonus;
+    uint256 public decimals;
+    uint256 public secondsUntilInactive;
+    bool public onlyRewardActiveReferrers;
+    RefereeBonusRate[] public refereeBonusRateMap;
     
-    constructor(address _pumpyFarmAddress, address _PMPTokenAddress, address _storage)
-    public
-    // solium-disable-next-line no-empty-blocks
-    {
+    event EmergencyWithdraw(
+        address indexed user,
+        uint256 indexed pid,
+        uint256 amount
+    );
+    
+    function initialize() public initializer {
+        require(!initialized, "Contract instance has already been initialized");
+        initialized = true;
+        
+        rateStaking = 0;
+        PMPPerBlock = 8500000000000000;
+        PMPMaxSupply = 100000e18;
+        pumpyFarmAddress = 0x29142471a5c33a2a4cD7C8f18Ce881F699b0c681;
+        PMPTokenAddress = 0x8d4FBB3AC63bf33851dCE80D63613Df1A515BC00;
+        levelRate = [5000, 3000, 2000];
+
         // Should hold PMP for 1 level = 1 pmp, 2 level = 5 pmp, 3 level = 10 pmp
         pmpThreshold=[1e18, 5e18, 10e18];
-        pumpyFarmAddress = _pumpyFarmAddress;
-        PMPTokenAddress = _PMPTokenAddress;
 
-        referralStorage = ReferralStorage(_storage);
-        levelRate = [5000, 3000, 2000];
+        referralBonus = 1000;
+        decimals = 10000;
+        secondsUntilInactive = 0;
+        onlyRewardActiveReferrers = false;
     }
     
     function setStrategy(uint256 _pid, address _strategy) public onlyOwner {
@@ -1549,7 +1231,7 @@ contract PumpyReferral is Ownable {
     }
     
     function setUser(address _user, address _referrer) public onlyOwner {
-        ReferralStorage.Account memory user = referralStorage.accounts(_user);
+        Account storage user = accounts[_user];
         user.referrer = _referrer;
     }
     
@@ -1575,20 +1257,15 @@ contract PumpyReferral is Ownable {
         
         rateStaking = _rate;
     }
-
-    function toogleIsStopped() public onlyOwner {
-        isStopped = !isStopped;
-    }
     
     function withdrawPMP(uint256 _pid) public {
         IPumpyFarm(pumpyFarmAddress).withdraw(_pid, 0);
     }
   
     function deposit(address _referrer, uint256 _pid, uint256 _wantAmt) public {
-        require(!isStopped, "Contract stopped");
         IPumpyFarm(pumpyFarmAddress).updatePool(_pid);
           
-        ReferralStorage.UserInfo memory user = referralStorage.getUser(_pid, msg.sender);
+        UserInfo storage user = userInfo[_pid][msg.sender];
         IPumpyFarm.PoolInfo memory pool = IPumpyFarm(pumpyFarmAddress).poolInfo(_pid);
     
         if (user.shares > 0) {
@@ -1597,7 +1274,6 @@ contract PumpyReferral is Ownable {
                     user.rewardDebt
                 );
             if (pending > 0) {
-                IPumpyFarm(pumpyFarmAddress).withdraw(_pid, 0);
                 uint paidReferral = payReferral(pending, PMPTokenAddress);
                 safePMPTransfer(msg.sender, pending.sub(paidReferral));
             }
@@ -1619,20 +1295,18 @@ contract PumpyReferral is Ownable {
     
         if (!hasReferrer(msg.sender)) {
             // Treasure address as referrer by deafult
-            bool isValid;
-            if (_referrer != EMPTY_REFERRER) {
-                isValid = addReferrer(_referrer);
+            if (_referrer != address(0)) {
+                addReferrer(_referrer);
             } else {
-                isValid = addReferrer(treasure);
+                addReferrer(treasure);
             }
-            require(isValid, "Referrer should be valid");
         }
     }
   
     function withdraw(uint256 _pid, uint256 _wantAmt) public {
         IPumpyFarm(pumpyFarmAddress).updatePool(_pid);
       
-        ReferralStorage.UserInfo memory user = referralStorage.getUser(_pid, msg.sender);
+        UserInfo storage user = userInfo[_pid][msg.sender];
         IPumpyFarm.PoolInfo memory pool = IPumpyFarm(pumpyFarmAddress).poolInfo(_pid);
         
         uint256 sharesTotal = IStrategy(pool.strat).sharesTotal();
@@ -1647,18 +1321,9 @@ contract PumpyReferral is Ownable {
         if (_wantAmt > amount) {
             _wantAmt = amount;
         }
-        uint256 pending =
-            user.shares.mul(pool.accPMPPerShare).div(1e12).sub(
-                user.rewardDebt
-            );
-        if (pending > 0) {
-            IPumpyFarm(pumpyFarmAddress).withdraw(_pid, 0);
-            uint paidReferral = payReferral(pending, PMPTokenAddress);
-            safePMPTransfer(msg.sender, pending.sub(paidReferral));
-        }
         if (_wantAmt > 0) {
-            uint256 sharesRemoved = IReferralStrat(strategies[_pid]).getSharesRemoved(pool.strat, _wantAmt, wantLockedTotal);
             IPumpyFarm(pumpyFarmAddress).withdraw(_pid, _wantAmt);
+            uint256 sharesRemoved = IReferralStrat(strategies[_pid]).getSharesRemoved(pool.strat, _wantAmt, wantLockedTotal);
 
             if (sharesRemoved > user.shares) {
                 user.shares = 0;
@@ -1671,6 +1336,14 @@ contract PumpyReferral is Ownable {
                 _wantAmt = wantBal;
             }
             pool.want.safeTransfer(address(msg.sender), _wantAmt);
+        }
+        uint256 pending =
+            user.shares.mul(pool.accPMPPerShare).div(1e12).sub(
+                user.rewardDebt
+            );
+        if (pending > 0) {
+            uint paidReferral = payReferral(pending, PMPTokenAddress);
+            safePMPTransfer(msg.sender, pending.sub(paidReferral));
         }
         user.rewardDebt = user.shares.mul(pool.accPMPPerShare).div(1e12);
     }
@@ -1692,7 +1365,7 @@ contract PumpyReferral is Ownable {
         returns (uint256)
     {
         IPumpyFarm.PoolInfo memory pool = IPumpyFarm(pumpyFarmAddress).poolInfo(_pid);
-        ReferralStorage.UserInfo memory user = referralStorage.getUser(_pid, _user);
+        UserInfo storage user = userInfo[_pid][_user];
         uint256 accPMPPerShare = pool.accPMPPerShare;
         uint256 sharesTotal = IStrategy(pool.strat).sharesTotal();
         if (block.number > pool.lastRewardBlock && sharesTotal != 0) {
@@ -1715,7 +1388,7 @@ contract PumpyReferral is Ownable {
         returns (uint256)
     {
         IPumpyFarm.PoolInfo memory pool = IPumpyFarm(pumpyFarmAddress).poolInfo(_pid);
-        ReferralStorage.UserInfo memory user = referralStorage.getUser(_pid, _user);
+        UserInfo storage user = userInfo[_pid][_user];
 
         uint256 sharesTotal = IStrategy(pool.strat).sharesTotal();
         uint256 wantLockedTotal =
@@ -1741,12 +1414,12 @@ contract PumpyReferral is Ownable {
    * @return the total referral bonus paid
    */
     function payReferral(uint256 value, address wantAddress) internal returns(uint256){
-        ReferralStorage.Account memory userAccount = referralStorage.accounts(msg.sender);
+        Account memory userAccount = accounts[msg.sender];
         uint totalReferal;
     
         for (uint i; i < levelRate.length; i++) {
             address parent = userAccount.referrer;
-            ReferralStorage.Account memory parentAccount = referralStorage.accounts(userAccount.referrer);
+            Account storage parentAccount = accounts[userAccount.referrer];
             
             uint c = value.mul(referralBonus).div(decimals);
             c = c.mul(levelRate[i]).div(decimals);
@@ -1754,11 +1427,9 @@ contract PumpyReferral is Ownable {
             if (parent == address(0)) {
                 // Send to leaderPoolsAddress
                 IERC20(wantAddress).safeTransfer(leaderPoolsAddress, c);
-                emit PaidLeaderPool(c, parent);
-                totalReferal = totalReferal.add(c);
             } else {
                 // Check balance in PMP pool except for Treasure address
-                if (parent == treasure || poolStakingAddress == address(0) || stakedWantTokens(poolStakingPid, parent) >= pmpThreshold[i]) {
+                if (parent == treasure || userInfo[poolStakingPid][parent].shares >= pmpThreshold[i]) {
                     totalReferal = totalReferal.add(c);
                     parentAccount.reward = parentAccount.reward.add(c);
                     if (parent == treasure) {
@@ -1766,17 +1437,13 @@ contract PumpyReferral is Ownable {
                         uint256 treasurePoolShare = c.sub(stakePoolShare);
                         IERC20(wantAddress).safeTransfer(parent, treasurePoolShare);
                         IERC20(wantAddress).safeTransfer(poolStakingAddress, stakePoolShare);
-                        emit PaidTreasure(treasurePoolShare);
-                        emit PaidStakingPool(stakePoolShare);
                     } else {
                         IERC20(wantAddress).safeTransfer(parent, c);
-                        emit PaidReferral(msg.sender, parent, c, i + 1);
                     }
+                    emit PaidReferral(msg.sender, parent, c, i + 1);
                 } else {
                     // Send to leaderPoolsAddress
                     IERC20(wantAddress).safeTransfer(leaderPoolsAddress, c);
-                    emit PaidLeaderPool(c, parent);
-                    totalReferal = totalReferal.add(c);
                 }
                 userAccount = parentAccount;
             }
@@ -1784,30 +1451,17 @@ contract PumpyReferral is Ownable {
     
         return totalReferal;
     }
-
-    function _emergencyWithdrawStart(uint256 _pid) internal {
-        WithdrawInfo storage info = withdrawInfo[_pid];
-
-        if (!info.isWithdrawActive) {
-            IPumpyFarm.PoolInfo memory pool = IPumpyFarm(pumpyFarmAddress).poolInfo(_pid);
-            uint256 wantLockedTotal =
-                IStrategy(pool.strat).wantLockedTotal();
-            uint256 sharesTotal = IStrategy(pool.strat).sharesTotal();
-            info.isWithdrawActive = true;
-            info.sharesTotal = sharesTotal;
-            info.wantLockedTotal = wantLockedTotal;
-            IPumpyFarm(pumpyFarmAddress).emergencyWithdraw(_pid);
-        }
-    }
     
     function emergencyWithdraw(uint256 _pid) public {
-        _emergencyWithdrawStart(_pid);
-
         IPumpyFarm.PoolInfo memory pool = IPumpyFarm(pumpyFarmAddress).poolInfo(_pid);
-        WithdrawInfo storage info = withdrawInfo[_pid];
-        ReferralStorage.UserInfo memory user = referralStorage.getUser(_pid, msg.sender);
+        UserInfo storage user = userInfo[_pid][msg.sender];
+        
+        IPumpyFarm(pumpyFarmAddress).emergencyWithdraw(_pid);
 
-        uint256 amount = user.shares.mul(info.wantLockedTotal).div(info.sharesTotal);
+        uint256 wantLockedTotal =
+            IStrategy(pool.strat).wantLockedTotal();
+        uint256 sharesTotal = IStrategy(pool.strat).sharesTotal();
+        uint256 amount = user.shares.mul(wantLockedTotal).div(sharesTotal);
 
         pool.want.safeTransfer(address(msg.sender), amount);
         emit EmergencyWithdraw(msg.sender, _pid, amount);
@@ -1823,18 +1477,19 @@ contract PumpyReferral is Ownable {
         return S;
     }
 
+
     /**
     * @dev Utils function for check whether an address has the referrer
     */
     function hasReferrer(address addr) public view returns(bool){
-        return referralStorage.accounts(addr).referrer != address(0);
+        return accounts[addr].referrer != address(0);
     }
 
     /**
     * @dev Get block timestamp with function for testing mock
     */
     function getTime() public view returns(uint256) {
-        return now; // solium-disable-line security/no-block-members
+        return block.timestamp; // solium-disable-line security/no-block-members
     }
 
     function isCircularReference(address referrer, address referee) internal view returns(bool){
@@ -1849,7 +1504,7 @@ contract PumpyReferral is Ownable {
             return true;
         }
 
-        parent = referralStorage.accounts(parent).referrer;
+        parent = accounts[parent].referrer;
         }
 
         return false;
@@ -1867,13 +1522,13 @@ contract PumpyReferral is Ownable {
         } else if (isCircularReference(referrer, msg.sender)) {
         emit RegisteredRefererFailed(msg.sender, referrer, "Referee cannot be one of referrer uplines");
         return false;
-        } else if (referralStorage.accounts(msg.sender).referrer != address(0)) {
+        } else if (accounts[msg.sender].referrer != address(0)) {
         emit RegisteredRefererFailed(msg.sender, referrer, "Address have been registered upline");
         return false;
         }
 
-        ReferralStorage.Account memory userAccount = referralStorage.accounts(msg.sender);
-        ReferralStorage.Account memory parentAccount = referralStorage.accounts(referrer);
+        Account storage userAccount = accounts[msg.sender];
+        Account storage parentAccount = accounts[referrer];
 
         userAccount.referrer = referrer;
         userAccount.lastActiveTimestamp = getTime();
